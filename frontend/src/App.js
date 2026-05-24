@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { ShieldAlert, ShieldCheck, AlertTriangle, RefreshCw, Loader, Zap, Globe, Clock, BarChart2, ArrowLeft } from "lucide-react";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ShieldAlert, ShieldCheck, AlertTriangle, RefreshCw, Loader, Zap, Globe, Clock, BarChart2 } from "lucide-react";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer} from "recharts";
 import "./App.css";
 
 const SEV_CONFIG = {
