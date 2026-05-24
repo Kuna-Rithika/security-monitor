@@ -4,6 +4,9 @@ import { ShieldAlert, ShieldCheck, AlertTriangle, RefreshCw, Loader, Zap, Globe,
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer} from "recharts";
 import "./App.css";
 
+// ✅ FIX 1: Replace localhost with your Render URL
+const API_BASE = import.meta.env.VITE_API_URL || "https://security-monitor-9pwp.onrender.com";
+
 const SEV_CONFIG = {
   CRITICAL: { color: "#ff3939", bg: "#ff4d4d18" },
   HIGH:     { color: "#ff8c00", bg: "#ff8c0018" },
@@ -43,6 +46,8 @@ export default function App() {
   const [visibleAlerts, setVisibleAlerts] = useState([]);
   const [alertsPerSec, setAlertsPerSec] = useState(0);
   const [filter, setFilter] = useState("ALL");
+  // ✅ FIX 2: Add error state for user feedback
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (alerts.length === 0) return;
@@ -58,24 +63,40 @@ export default function App() {
     return () => clearInterval(interval);
   }, [alerts]);
 
+  // ✅ FIX 3: fetchAlerts now uses API_BASE + proper error handling
   const fetchAlerts = async () => {
     setScanning(true);
     setAnalysis("");
     setVisibleAlerts([]);
     setPage("monitor");
-    const res = await axios.get("http://localhost:5000/api/alerts");
-    setAlerts(res.data.alerts);
-    setScanning(false);
+    setError("");
+    try {
+      const res = await axios.get(`${API_BASE}/api/alerts`);
+      setAlerts(res.data.alerts);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("❌ Could not reach backend. Check Render service is running.");
+    } finally {
+      setScanning(false);
+    }
   };
 
+  // ✅ FIX 4: analyzeAlerts now uses API_BASE + proper error handling
   const analyzeAlerts = async () => {
     if (!alerts.length) return;
     setLoading(true);
     setAnalysis("");
-    const res = await axios.post("http://localhost:5000/api/analyze", { alerts });
-    setAnalysis(res.data.analysis);
-    setLoading(false);
-    setPage("report");
+    setError("");
+    try {
+      const res = await axios.post(`${API_BASE}/api/analyze`, { alerts });
+      setAnalysis(res.data.analysis);
+      setPage("report");
+    } catch (err) {
+      console.error("Analyze error:", err);
+      setError("❌ AI analysis failed. Check GROQ_API_KEY is set in Render environment.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const counts = {
@@ -87,7 +108,6 @@ export default function App() {
 
   const filtered = filter === "ALL" ? visibleAlerts : visibleAlerts.filter(a => a?.severity === filter);
 
-  // Parse AI analysis into structured lines
   const parseAnalysis = (text) => {
     if (!text) return { threatLines: [], summary: "" };
     const parts = text.split("=== SUMMARY ===");
@@ -104,7 +124,6 @@ export default function App() {
 
   const { threatLines, summary } = parseAnalysis(analysis);
 
-  // Chart data
   const realCount = threatLines.length;
   const safeCount = alerts.length - realCount;
   const donutData = [
@@ -156,6 +175,13 @@ export default function App() {
         </div>
       </div>
 
+      {/* ✅ FIX 5: Show errors to user */}
+      {error && (
+        <div style={{ background: "#ff4d4d22", border: "1px solid #ff4d4d", color: "#ff4d4d", padding: "10px 20px", margin: "10px 20px", borderRadius: 8, fontSize: 14 }}>
+          {error}
+        </div>
+      )}
+
       {/* STAT CARDS */}
       {alerts.length > 0 && (
         <div className="stat-row">
@@ -176,7 +202,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PAGE: MONITOR ── */}
+      {/* PAGE: MONITOR */}
       {page === "monitor" && (
         <div className="main-grid">
           <div className="panel alerts-panel">
@@ -250,11 +276,9 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PAGE: REPORT ── */}
+      {/* PAGE: REPORT */}
       {page === "report" && analysis && (
         <div className="report-page">
-
-          {/* Charts row */}
           <div className="charts-row">
             <div className="panel chart-panel">
               <div className="panel-header">
@@ -298,7 +322,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Real threats ranked */}
           <div className="panel" style={{ marginBottom: 16 }}>
             <div className="panel-header">
               <div className="panel-title">
@@ -325,7 +348,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* AI Summary */}
           {summary && (
             <div className="panel summary-panel">
               <div className="panel-header">
