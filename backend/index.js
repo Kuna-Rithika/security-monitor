@@ -126,11 +126,10 @@ function generateMockAlerts() {
 }
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
 app.get('/', (req, res) => {
   res.json({ 
     status: '✅ Security Monitor API is running',
     endpoints: ['/api/alerts', '/api/analyze']
   });
 });
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
